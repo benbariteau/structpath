@@ -7,20 +7,20 @@ use thiserror::Error;
 use std::str::FromStr;
 use std::num::{ParseFloatError, ParseIntError};
 
-enum SegmentType {
+pub enum SegmentType {
     Float,
     Integer,
     String,
     UnsignedInteger,
 }
 
-struct SegmentValueSchema {
-    name: String,
-    segment_type: SegmentType,
+pub struct SegmentValueSchema {
+    pub name: String,
+    pub segment_type: SegmentType,
 }
 
 #[derive(PartialEq, Debug)]
-enum SegmentValue {
+pub enum SegmentValue {
     F64(f64),
     I128(i128),
     U128(u128),
@@ -28,13 +28,13 @@ enum SegmentValue {
 }
 
 
-enum SegmentSchema {
+pub enum SegmentSchema {
     Literal(String),
     Value(SegmentValueSchema),
 }
 
-struct Schema {
-    segments: Vec<SegmentSchema>,
+pub struct Schema {
+    pub segments: Vec<SegmentSchema>,
 }
 
 #[derive(Error, Debug)]
