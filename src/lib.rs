@@ -50,7 +50,7 @@ enum StructPathError {
     ParseIntError(#[from] ParseIntError),
 }
 
-fn parse_path(path: String, schema: Schema) -> Result<HashMap<String, SegmentValue>, StructPathError> {
+fn parse_path_generic(path: String, schema: Schema) -> Result<HashMap<String, SegmentValue>, StructPathError> {
     let mut path_values = HashMap::new();
     for (segment, segment_schema) in path.split("/").skip(1).zip(schema.segments.iter()) {
         match segment_schema {
@@ -84,9 +84,9 @@ fn parse_path(path: String, schema: Schema) -> Result<HashMap<String, SegmentVal
 mod tests {
     use super::*;
     #[test]
-    fn parse_path_works() {
+    fn parse_path_generic_works() {
         assert_eq!(
-            parse_path(
+            parse_path_generic(
                 "/foo/1/bar/thing".to_owned(),
                 Schema{
                     segments: vec![
