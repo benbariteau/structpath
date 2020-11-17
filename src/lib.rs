@@ -84,7 +84,7 @@ fn parse_path_generic(path: String, schema: Schema) -> Result<HashMap<String, Se
 mod tests {
     use super::*;
     #[test]
-    fn parse_path_generic_works() {
+    fn test_parse_path_generic() {
         assert_eq!(
             parse_path_generic(
                 "/foo/1/bar/thing".to_owned(),
@@ -107,6 +107,48 @@ mod tests {
                     "foo".to_owned() => SegmentValue::U128(1),
                     "bar".to_owned() => SegmentValue::String("thing".to_owned()),
                 }
+            );
+    }
+
+    #[test]
+    fn test_parse_path_generic_float() {
+        assert_eq!(
+            parse_path_generic(
+                "/foo/1.2".to_owned(),
+                Schema{
+                    segments: vec![
+                        SegmentSchema::Literal("foo".to_owned()),
+                        SegmentSchema::Value(SegmentValueSchema{
+                            name: "foo".to_owned(),
+                            segment_type: SegmentType::Float,
+                        }),
+                    ],
+                },
+                ).unwrap(),
+            hashmap!{
+                "foo".to_owned() => SegmentValue::F64(1.2),
+            },
+            );
+    }
+
+    #[test]
+    fn test_parse_path_generic_signed_integer() {
+        assert_eq!(
+            parse_path_generic(
+                "/foo/-1".to_owned(),
+                Schema{
+                    segments: vec![
+                        SegmentSchema::Literal("foo".to_owned()),
+                        SegmentSchema::Value(SegmentValueSchema{
+                            name: "foo".to_owned(),
+                            segment_type: SegmentType::Integer,
+                        }),
+                    ],
+                },
+                ).unwrap(),
+            hashmap!{
+                "foo".to_owned() => SegmentValue::I128(-1),
+            },
             );
     }
 }
