@@ -4,7 +4,6 @@ extern crate thiserror;
 
 use std::collections::HashMap;
 use thiserror::Error;
-use std::str::FromStr;
 use std::num::{ParseFloatError, ParseIntError};
 
 pub enum SegmentType {
