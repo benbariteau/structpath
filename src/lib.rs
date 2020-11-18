@@ -899,4 +899,19 @@ mod tests {
             ).unwrap();
         assert_eq!(value, Value{foo: 1.2});
     }
+
+    #[test]
+    fn test_parse_path_idiomatic() {
+
+        #[derive(Deserialize, PartialEq, Debug)]
+        struct Parameters{
+            foo: u64,
+            bar: String,
+        }
+
+        let path_schema = Schema::path("/foo/<foo:u64>/bar/<bar>").unwrap();
+        let parameters: Parameters = path_schema.parse("/foo/1/bar/thing").unwrap();
+        assert_eq!(parameters, Parameters{foo: 1, bar: "thing".to_owned()});
+
+    }
 }
