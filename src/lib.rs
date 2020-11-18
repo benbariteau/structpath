@@ -136,6 +136,10 @@ impl Schema {
     pub fn parse<'a, S, T>(&self, path: S) -> Result<T, StructPathError> where S: Into<String>, T: serde::Deserialize<'a> {
         parse_path(path, self)
     }
+
+    pub fn generate<T>(&self, parameters: &T) -> Result<String, StructPathError> where T: serde::Serialize {
+        generate_path(parameters, self)
+    }
 }
 
 #[derive(Error, Debug)]
@@ -157,9 +161,17 @@ pub enum StructPathError {
     ExpectedType(String, SegmentValue),
     #[error("Not supported: {0}")]
     NotSupported(String),
+    #[error("Expected field {0:?} missing from input")]
+    MissingField(String),
 }
 
 impl serde::de::Error for StructPathError {
+    fn custom<T>(msg: T) -> Self where T: Display {
+        StructPathError::SerdeInternalError(msg.to_string())
+    }
+}
+
+impl serde::ser::Error for StructPathError {
     fn custom<T>(msg: T) -> Self where T: Display {
         StructPathError::SerdeInternalError(msg.to_string())
     }
@@ -685,10 +697,304 @@ pub fn parse_path<'a, S, T>(path: S, schema: &Schema) -> Result<T, StructPathErr
     T::deserialize(&deserializer)
 }
 
+struct Serializer<'a>{
+    schema: &'a Schema,
+    last_key: String,
+    serialized_values: HashMap<String, String>,
+}
+
+impl<'a, 'b> serde::ser::Serializer for &'a mut Serializer<'b> {
+    type Ok = ();
+    type Error = StructPathError;
+
+    type SerializeSeq = Self;
+    type SerializeTuple = Self;
+    type SerializeTupleStruct = Self;
+    type SerializeTupleVariant = Self;
+    type SerializeMap = Self;
+    type SerializeStruct = Self;
+    type SerializeStructVariant = Self;
+
+    fn serialize_bool(self, v: bool) -> Result<(), StructPathError> {
+        Err(StructPathError::NotSupported("bool".to_owned()))
+    }
+
+    fn serialize_i8(self, v: i8) -> Result<(), StructPathError> {
+        unimplemented!();
+    }
+
+    fn serialize_i16(self, v: i16) -> Result<(), StructPathError> {
+        unimplemented!();
+    }
+
+    fn serialize_i32(self, v: i32) -> Result<(), StructPathError> {
+        unimplemented!();
+    }
+
+    fn serialize_i64(self, v: i64) -> Result<(), StructPathError> {
+        unimplemented!();
+    }
+
+    fn serialize_i128(self, v: i128) -> Result<(), StructPathError> {
+        unimplemented!();
+    }
+
+    fn serialize_u8(self, v: u8) -> Result<(), StructPathError> {
+        unimplemented!();
+    }
+
+    fn serialize_u16(self, v: u16) -> Result<(), StructPathError> {
+        unimplemented!();
+    }
+
+    fn serialize_u32(self, v: u32) -> Result<(), StructPathError> {
+        unimplemented!();
+    }
+
+    fn serialize_u64(self, v: u64) -> Result<(), StructPathError> {
+        self.serialized_values.insert(self.last_key.clone(), v.to_string());
+        Ok(())
+    }
+
+    fn serialize_u128(self, v: u128) -> Result<(), StructPathError> {
+        unimplemented!();
+    }
+
+    fn serialize_f32(self, v: f32) -> Result<(), StructPathError> {
+        unimplemented!();
+    }
+
+    fn serialize_f64(self, v: f64) -> Result<(), StructPathError> {
+        unimplemented!();
+    }
+
+    fn serialize_char(self, v: char) -> Result<(), StructPathError> {
+        unimplemented!();
+    }
+
+    fn serialize_str(self, v: &str) -> Result<(), StructPathError> {
+        self.serialized_values.insert(self.last_key.clone(), v.to_owned());
+        Ok(())
+    }
+
+    fn serialize_bytes(self, v: &[u8]) -> Result<(), StructPathError> {
+        unimplemented!();
+    }
+
+    fn serialize_none(self) -> Result<(), StructPathError> {
+        unimplemented!();
+    }
+
+    fn serialize_some<T>(self, value: &T) -> Result<(), StructPathError> where T: ?Sized + serde::Serialize {
+        unimplemented!();
+    }
+
+    fn serialize_unit(self) -> Result<(), StructPathError> {
+        unimplemented!();
+    }
+
+    fn serialize_unit_struct(self, _name: &'static str) -> Result<(), StructPathError> {
+        unimplemented!();
+    }
+
+    fn serialize_unit_variant(
+        self,
+        _name: &'static str,
+        _variant_index: u32,
+        _variant: &'static str,
+    ) -> Result<(), StructPathError> {
+        unimplemented!();
+    }
+
+    fn serialize_newtype_struct<T>(
+        self,
+        _name: &'static str,
+        _value: &T,
+        ) -> Result<(), StructPathError> where T: ?Sized + serde::Serialize, {
+        unimplemented!();
+    }
+
+    fn serialize_newtype_variant<T>(
+        self,
+        _name: &'static str,
+        _variant_index: u32,
+        _variant: &'static str,
+        _value: &T,
+        ) -> Result<(), StructPathError> where T: ?Sized + serde::Serialize, {
+        unimplemented!();
+    }
+
+    fn serialize_seq(self, _len: Option<usize>) -> Result<Self::SerializeSeq, StructPathError> {
+        unimplemented!();
+    }
+
+    fn serialize_tuple(self, _len: usize) -> Result<Self::SerializeTuple, StructPathError> {
+        unimplemented!();
+    }
+
+    fn serialize_tuple_struct(
+        self,
+        _name: &'static str,
+        _len: usize,
+        ) -> Result<Self::SerializeTupleStruct, StructPathError> {
+        unimplemented!();
+    }
+
+    fn serialize_tuple_variant(
+        self,
+        _name: &'static str,
+        _variant_index: u32,
+        _variant: &'static str,
+        _len: usize,
+        ) -> Result<Self::SerializeTupleVariant, StructPathError> {
+        unimplemented!();
+    }
+
+    fn serialize_map(self, _len: Option<usize>) -> Result<Self::SerializeMap, StructPathError> {
+        unimplemented!();
+    }
+
+    fn serialize_struct(
+        self,
+        _name: &'static str,
+        _len: usize,
+        ) -> Result<Self::SerializeStruct, StructPathError> {
+        Ok(self)
+    }
+
+    fn serialize_struct_variant(
+        self,
+        _name: &'static str,
+        _variant_index: u32,
+        _variant: &'static str,
+        _len: usize,
+        ) -> Result<Self::SerializeStructVariant, StructPathError> {
+        unimplemented!();
+    }
+
+}
+
+impl<'a, 'b> serde::ser::SerializeSeq for &'a mut Serializer<'b> {
+    type Ok = ();
+    type Error = StructPathError;
+
+    fn serialize_element<T>(&mut self, value: &T) -> Result<(), StructPathError> where T: ?Sized + serde::Serialize {
+        unimplemented!();
+    }
+
+    fn end(self) -> Result<(), StructPathError> {
+        unimplemented!();
+    }
+}
+
+impl<'a, 'b> serde::ser::SerializeTuple for &'a mut Serializer<'b> {
+    type Ok = ();
+    type Error = StructPathError;
+
+    fn serialize_element<T>(&mut self, _value: &T) -> Result<(), StructPathError> where T: ?Sized + serde::Serialize {
+        unimplemented!();
+    }
+
+    fn end(self) -> Result<(), StructPathError> {
+        unimplemented!();
+    }
+}
+
+impl<'a, 'b> serde::ser::SerializeTupleStruct for &'a mut Serializer<'b> {
+    type Ok = ();
+    type Error = StructPathError;
+
+    fn serialize_field<T>(&mut self, _value: &T) -> Result<(), StructPathError> where T: ?Sized + serde::Serialize {
+        unimplemented!();
+    }
+
+    fn end(self) -> Result<(), StructPathError> {
+        unimplemented!();
+    }
+}
+
+impl<'a, 'b> serde::ser::SerializeTupleVariant for &'a mut Serializer<'b> {
+    type Ok = ();
+    type Error = StructPathError;
+
+    fn serialize_field<T>(&mut self, _value: &T) -> Result<(), StructPathError> where T: ?Sized + serde::Serialize {
+        unimplemented!();
+    }
+
+    fn end(self) -> Result<(), StructPathError> {
+        unimplemented!();
+    }
+}
+
+impl<'a, 'b> serde::ser::SerializeMap for &'a mut Serializer<'b> {
+    type Ok = ();
+    type Error = StructPathError;
+
+    fn serialize_key<T>(&mut self, _key: &T) -> Result<(), StructPathError> where T: ?Sized + serde::Serialize, {
+        unimplemented!();
+    }
+
+    fn serialize_value<T>(&mut self, _value: &T) -> Result<(), StructPathError> where T: ?Sized + serde::Serialize {
+        unimplemented!();
+    }
+
+    fn end(self) -> Result<(), StructPathError> {
+        unimplemented!();
+    }
+}
+
+impl<'a, 'b> serde::ser::SerializeStruct for &'a mut Serializer<'b> {
+    type Ok = ();
+    type Error = StructPathError;
+
+    fn serialize_field<T>(&mut self, key: &'static str, value: &T) -> Result<(), StructPathError> where T: ?Sized + serde::Serialize {
+        self.last_key = key.to_owned();
+        value.serialize(&mut **self)?;
+        Ok(())
+    }
+
+    fn end(self) -> Result<(), StructPathError> {
+        Ok(())
+    }
+}
+
+impl<'a, 'b> serde::ser::SerializeStructVariant for &'a mut Serializer<'b> {
+    type Ok = ();
+    type Error = StructPathError;
+
+    fn serialize_field<T>(&mut self, _key: &'static str, _value: &T) -> Result<(), StructPathError> where T: ?Sized + serde::Serialize {
+        unimplemented!();
+    }
+
+    fn end(self) -> Result<(), StructPathError> {
+        unimplemented!();
+    }
+}
+
+fn generate_path<T>(parameters: &T, schema: &Schema) -> Result<String, StructPathError> where T: serde::Serialize {
+    let mut serializer = Serializer{
+        schema: schema,
+        last_key: "".to_owned(),
+        serialized_values: HashMap::new(),
+    };
+    parameters.serialize(&mut serializer)?;
+    let mut generated_path = String::new();
+    for segment_schema in &schema.segments {
+        match segment_schema {
+            SegmentSchema::Literal(literal) => generated_path = format!("{}/{}", generated_path, literal),
+            SegmentSchema::Value(segment_value_schema) => match serializer.serialized_values.get(&segment_value_schema.name) {
+                Some(value) => generated_path = format!("{}/{}", generated_path, value),
+                None => return Err(StructPathError::MissingField(segment_value_schema.name.clone())),
+            }
+        }
+    }
+    Ok(generated_path)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde::Deserialize;
+    use serde::{Deserialize, Serialize};
     #[test]
     fn test_parse_path_generic() {
         assert_eq!(
@@ -913,5 +1219,17 @@ mod tests {
         let parameters: Parameters = path_schema.parse("/foo/1/bar/thing").unwrap();
         assert_eq!(parameters, Parameters{foo: 1, bar: "thing".to_owned()});
 
+    }
+
+    #[test]
+    fn test_generate_path() {
+        #[derive(Serialize, PartialEq, Debug)]
+        struct Parameters{
+            foo: u64,
+            bar: String,
+        }
+
+        let schema = Schema::path("/foo/<foo:u64>/bar/<bar>").unwrap();
+        assert_eq!(schema.generate(&Parameters{foo: 1, bar: "thing".to_owned()}).unwrap(), "/foo/1/bar/thing");
     }
 }
