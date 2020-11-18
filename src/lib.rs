@@ -400,6 +400,13 @@ impl <'de, 'a> serde::de::Deserializer<'de> for ValueDeserializer {
         unimplemented!();
     }
 
+    fn deserialize_i128<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
+        match self.value {
+            SegmentValue::I128(value) => visitor.visit_i128(value),
+            _ => unimplemented!(),
+        }
+    }
+
     fn deserialize_u8<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
         unimplemented!();
     }
@@ -424,7 +431,10 @@ impl <'de, 'a> serde::de::Deserializer<'de> for ValueDeserializer {
     }
 
     fn deserialize_f64<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        unimplemented!();
+        match self.value {
+            SegmentValue::F64(value) => visitor.visit_f64(value),
+            _ => unimplemented!(),
+        }
     }
 
     fn deserialize_char<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
@@ -604,5 +614,49 @@ mod tests {
             }
         ).unwrap();
         assert_eq!(value, Value{foo: 1, bar: "thing".to_owned()});
+    }
+
+    #[test]
+    fn test_parse_path_i64() {
+        #[derive(Debug, Deserialize, PartialEq)]
+        struct Value{
+            foo: i128
+        }
+
+        let value: Value = parse_path(
+            "/foo/-1".to_owned(),
+            Schema{
+                segments: vec![
+                    SegmentSchema::Literal("foo".to_owned()),
+                    SegmentSchema::Value(SegmentValueSchema{
+                        name: "foo".to_owned(),
+                        segment_type: SegmentType::Integer,
+                    }),
+                ],
+            },
+            ).unwrap();
+        assert_eq!(value, Value{foo: -1});
+    }
+
+    #[test]
+    fn test_parse_path_f64() {
+        #[derive(Debug, Deserialize, PartialEq)]
+        struct Value{
+            foo: f64
+        }
+
+        let value: Value = parse_path(
+            "/foo/1.2".to_owned(),
+            Schema{
+                segments: vec![
+                    SegmentSchema::Literal("foo".to_owned()),
+                    SegmentSchema::Value(SegmentValueSchema{
+                        name: "foo".to_owned(),
+                        segment_type: SegmentType::Float,
+                    }),
+                ],
+            },
+            ).unwrap();
+        assert_eq!(value, Value{foo: 1.2});
     }
 }
