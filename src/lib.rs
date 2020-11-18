@@ -409,7 +409,7 @@ impl <'de> serde::de::Deserializer<'de> for IdentDeserializer {
         Err(StructPathError::NotSupported("map".to_owned()))
     }
 
-    fn deserialize_struct<V>(self, _name: &'static str, _fields: &'static [&'static str], visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
+    fn deserialize_struct<V>(self, _name: &'static str, _fields: &'static [&'static str], _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
         Err(StructPathError::NotSupported("struct".to_owned()))
     }
 
@@ -433,28 +433,40 @@ struct ValueDeserializer {
 impl <'de, 'a> serde::de::Deserializer<'de> for ValueDeserializer {
     type Error = StructPathError;
 
-    fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        unimplemented!();
+    fn deserialize_any<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
+        Err(StructPathError::NotSupported("deserialize_any".to_owned()))
     }
 
-    fn deserialize_bool<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        unimplemented!();
+    fn deserialize_bool<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
+        Err(StructPathError::NotSupported("bool".to_owned()))
     }
 
     fn deserialize_i8<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        unimplemented!();
+        match self.value {
+            SegmentValue::I8(value) => visitor.visit_i8(value),
+            _ => Err(StructPathError::ExpectedType("i8".to_owned(), self.value)),
+        }
     }
 
     fn deserialize_i16<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        unimplemented!();
+        match self.value {
+            SegmentValue::I16(value) => visitor.visit_i16(value),
+            _ => Err(StructPathError::ExpectedType("i16".to_owned(), self.value)),
+        }
     }
 
     fn deserialize_i32<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        unimplemented!();
+        match self.value {
+            SegmentValue::I32(value) => visitor.visit_i32(value),
+            _ => Err(StructPathError::ExpectedType("i32".to_owned(), self.value)),
+        }
     }
 
     fn deserialize_i64<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        unimplemented!();
+        match self.value {
+            SegmentValue::I64(value) => visitor.visit_i64(value),
+            _ => Err(StructPathError::ExpectedType("i64".to_owned(), self.value)),
+        }
     }
 
     fn deserialize_i128<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
@@ -513,12 +525,12 @@ impl <'de, 'a> serde::de::Deserializer<'de> for ValueDeserializer {
         }
     }
 
-    fn deserialize_char<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        unimplemented!();
+    fn deserialize_char<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
+        Err(StructPathError::NotSupported("char".to_owned()))
     }
 
     fn deserialize_str<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        unimplemented!();
+        self.deserialize_string(visitor)
     }
 
     fn deserialize_string<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
@@ -528,60 +540,60 @@ impl <'de, 'a> serde::de::Deserializer<'de> for ValueDeserializer {
         }
     }
 
-    fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        unimplemented!();
+    fn deserialize_bytes<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
+        Err(StructPathError::NotSupported("bytes".to_owned()))
     }
 
-    fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        unimplemented!();
+    fn deserialize_byte_buf<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
+        Err(StructPathError::NotSupported("byte_buf".to_owned()))
     }
 
-    fn deserialize_option<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        unimplemented!();
+    fn deserialize_option<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
+        Err(StructPathError::NotSupported("Option".to_owned()))
     }
 
-    fn deserialize_unit<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        unimplemented!();
+    fn deserialize_unit<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
+        Err(StructPathError::NotSupported("()".to_owned()))
     }
 
-    fn deserialize_unit_struct<V>(self, name: &'static str, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        unimplemented!();
+    fn deserialize_unit_struct<V>(self, _name: &'static str, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
+        Err(StructPathError::NotSupported("unit struct".to_owned()))
     }
 
-    fn deserialize_newtype_struct<V>(self, name: &'static str, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        unimplemented!();
+    fn deserialize_newtype_struct<V>(self, _name: &'static str, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
+        Err(StructPathError::NotSupported("newtype struct".to_owned()))
     }
 
-    fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        unimplemented!();
+    fn deserialize_seq<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
+        Err(StructPathError::NotSupported("sequence".to_owned()))
     }
 
-    fn deserialize_tuple<V>(self, len: usize, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        unimplemented!();
+    fn deserialize_tuple<V>(self, _len: usize, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
+        Err(StructPathError::NotSupported("tuple".to_owned()))
     }
 
-    fn deserialize_tuple_struct<V>(self, name: &'static str, len: usize, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        unimplemented!();
+    fn deserialize_tuple_struct<V>(self, _name: &'static str, _len: usize, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
+        Err(StructPathError::NotSupported("tuple struct".to_owned()))
     }
 
-    fn deserialize_map<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        unimplemented!();
+    fn deserialize_map<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
+        Err(StructPathError::NotSupported("map".to_owned()))
     }
 
-    fn deserialize_struct<V>(self, name: &'static str, fields: &'static [&'static str], visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        unimplemented!();
+    fn deserialize_struct<V>(self, _name: &'static str, _fields: &'static [&'static str], _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
+        Err(StructPathError::NotSupported("struct".to_owned()))
     }
 
-    fn deserialize_enum<V>(self, name: &'static str, variants: &'static [&'static str], visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        unimplemented!();
+    fn deserialize_enum<V>(self, _name: &'static str, _variants: &'static [&'static str], _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
+        Err(StructPathError::NotSupported("enum".to_owned()))
     }
 
-    fn deserialize_identifier<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        unimplemented!();
+    fn deserialize_identifier<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
+        Err(StructPathError::NotSupported("identifier".to_owned()))
     }
 
-    fn deserialize_ignored_any<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        unimplemented!();
+    fn deserialize_ignored_any<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
+        Err(StructPathError::NotSupported("deserialize_ignored_any".to_owned()))
     }
 }
 
