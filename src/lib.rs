@@ -132,6 +132,10 @@ impl Schema {
         self.segments.push(SegmentSchema::Value(SegmentValueSchema{name: name.into(), segment_type: segment_type}));
         self
     }
+
+    pub fn parse<'a, T>(&self, path: String) -> Result<T, StructPathError> where T: serde::Deserialize<'a> {
+        parse_path(path, self)
+    }
 }
 
 #[derive(Error, Debug)]
