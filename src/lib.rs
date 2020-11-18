@@ -161,7 +161,7 @@ impl serde::de::Error for StructPathError {
     }
 }
 
-fn parse_path_generic(path: String, schema: Schema) -> Result<HashMap<String, SegmentValue>, StructPathError> {
+fn parse_path_generic(path: String, schema: &Schema) -> Result<HashMap<String, SegmentValue>, StructPathError> {
     let mut path_values = HashMap::new();
     for (segment, segment_schema) in path.split("/").skip(1).zip(schema.segments.iter()) {
         match segment_schema {
@@ -675,7 +675,7 @@ impl <'de, 'a> serde::de::Deserializer<'de> for ValueDeserializer {
     }
 }
 
-pub fn parse_path<'a, T>(path: String, schema: Schema) -> Result<T, StructPathError> where T: serde::Deserialize<'a> {
+pub fn parse_path<'a, T>(path: String, schema: &Schema) -> Result<T, StructPathError> where T: serde::Deserialize<'a> {
     let generic_parsed_path_value = parse_path_generic(path, schema)?;
     let deserializer = Deserializer{generic_parsed_path: generic_parsed_path_value};
     T::deserialize(&deserializer)
@@ -690,7 +690,7 @@ mod tests {
         assert_eq!(
             parse_path_generic(
                 "/foo/1/bar/thing".to_owned(),
-                Schema{
+                &Schema{
                     segments: vec![
                         SegmentSchema::Literal("foo".to_owned()),
                         SegmentSchema::Value(SegmentValueSchema{
@@ -719,7 +719,7 @@ mod tests {
         assert_eq!(
             parse_path_generic(
                 "/foo/1.2".to_owned(),
-                Schema{
+                &Schema{
                     segments: vec![
                         SegmentSchema::Literal("foo".to_owned()),
                         SegmentSchema::Value(SegmentValueSchema{
@@ -742,7 +742,7 @@ mod tests {
         assert_eq!(
             parse_path_generic(
                 "/foo/-1".to_owned(),
-                Schema{
+                &Schema{
                     segments: vec![
                         SegmentSchema::Literal("foo".to_owned()),
                         SegmentSchema::Value(SegmentValueSchema{
@@ -834,7 +834,7 @@ mod tests {
 
         let value: Value = parse_path(
             "/foo/1/bar/thing".to_owned(),
-            Schema{
+            &Schema{
                 segments: vec![
                     SegmentSchema::Literal("foo".to_owned()),
                     SegmentSchema::Value(SegmentValueSchema{
@@ -861,7 +861,7 @@ mod tests {
 
         let value: Value = parse_path(
             "/foo/-1".to_owned(),
-            Schema{
+            &Schema{
                 segments: vec![
                     SegmentSchema::Literal("foo".to_owned()),
                     SegmentSchema::Value(SegmentValueSchema{
@@ -883,7 +883,7 @@ mod tests {
 
         let value: Value = parse_path(
             "/foo/1.2".to_owned(),
-            Schema{
+            &Schema{
                 segments: vec![
                     SegmentSchema::Literal("foo".to_owned()),
                     SegmentSchema::Value(SegmentValueSchema{
