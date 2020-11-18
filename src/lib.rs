@@ -94,14 +94,41 @@ fn parse_path_generic(path: String, schema: Schema) -> Result<HashMap<String, Se
             }
             SegmentSchema::Value(segment_value_schema) => {
                 match segment_value_schema.segment_type {
+                    SegmentType::F32 => {
+                        path_values.insert(segment_value_schema.name.clone(), SegmentValue::F32(segment.parse()?));
+                    },
                     SegmentType::F64 => {
                         path_values.insert(segment_value_schema.name.clone(), SegmentValue::F64(segment.parse()?));
+                    },
+                    SegmentType::I8 => {
+                        path_values.insert(segment_value_schema.name.clone(), SegmentValue::I8(segment.parse()?));
+                    },
+                    SegmentType::I16 => {
+                        path_values.insert(segment_value_schema.name.clone(), SegmentValue::I16(segment.parse()?));
+                    },
+                    SegmentType::I32 => {
+                        path_values.insert(segment_value_schema.name.clone(), SegmentValue::I32(segment.parse()?));
+                    },
+                    SegmentType::I64 => {
+                        path_values.insert(segment_value_schema.name.clone(), SegmentValue::I64(segment.parse()?));
                     },
                     SegmentType::I128 => {
                         path_values.insert(segment_value_schema.name.clone(), SegmentValue::I128(segment.parse()?));
                     },
+                    SegmentType::U8 => {
+                        path_values.insert(segment_value_schema.name.clone(), SegmentValue::U8(segment.parse()?));
+                    },
+                    SegmentType::U16 => {
+                        path_values.insert(segment_value_schema.name.clone(), SegmentValue::U16(segment.parse()?));
+                    },
+                    SegmentType::U32 => {
+                        path_values.insert(segment_value_schema.name.clone(), SegmentValue::U32(segment.parse()?));
+                    },
                     SegmentType::U64 => {
                         path_values.insert(segment_value_schema.name.clone(), SegmentValue::U64(segment.parse()?));
+                    },
+                    SegmentType::U128 => {
+                        path_values.insert(segment_value_schema.name.clone(), SegmentValue::U128(segment.parse()?));
                     },
                     SegmentType::String => {
                         path_values.insert(segment_value_schema.name.clone(), SegmentValue::String(segment.to_owned()));
