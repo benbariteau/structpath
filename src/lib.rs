@@ -59,9 +59,68 @@ pub struct Schema {
     segments: Vec<SegmentSchema>,
 }
 
+#[derive(Error, Debug)]
+pub enum PathParseError {
+    #[error("Path schema syntax error in {segment:?}: {message}")]
+    SyntaxError{
+        segment: String,
+        message: String,
+    },
+    #[error("Unrecognized type: {0}")]
+    UnrecognizedType(String),
+}
+
 impl Schema {
     pub fn new() -> Self {
         Self{segments: vec![]}
+    }
+
+    pub fn path<S: Into<String>>(path: S) -> Result<Self, PathParseError> {
+        let mut schema = Schema{segments: vec![]};
+        for segment in path.into().split("/").skip(1) {
+            if &segment[0..1] == "<" {
+                let no_brackets: String = segment.chars().skip(1).take_while(|c| c != &'>').collect();
+                let chunks: Vec<&str> = no_brackets.split(":").collect();
+                if chunks.len() > 2 {
+                    return Err(PathParseError::SyntaxError{
+                        segment: segment.to_owned(),
+                        message: "Expected at most one ':' in path segment".to_owned(),
+                    });
+                } else if chunks.len() == 2 {
+                    let name = chunks[0];
+                    let segment_type = match chunks[1] {
+                        "f32" => SegmentType::F32,
+                        "f64" => SegmentType::F64,
+                        "u8" => SegmentType::U8,
+                        "u16" => SegmentType::U16,
+                        "u32" => SegmentType::U32,
+                        "u64" => SegmentType::U64,
+                        "u128" => SegmentType::U128,
+                        "i8" => SegmentType::I8,
+                        "i16" => SegmentType::I16,
+                        "i32" => SegmentType::I32,
+                        "i64" => SegmentType::I64,
+                        "i128" => SegmentType::I128,
+                        "String" => SegmentType::String,
+                        _ => {
+                            return Err(PathParseError::UnrecognizedType(chunks[1].to_owned()))
+                        },
+                    };
+                    schema.segments.push(SegmentSchema::Value(SegmentValueSchema{
+                        name: name.to_owned(),
+                        segment_type: segment_type,
+                    }))
+                } else { // chunks.len() == 1
+                    schema.segments.push(SegmentSchema::Value(SegmentValueSchema{
+                        name: chunks[0].to_owned(),
+                        segment_type: SegmentType::String,
+                    }));
+                }
+            } else {
+                schema.segments.push(SegmentSchema::Literal(segment.to_owned()));
+            }
+        }
+        Ok(schema)
     }
 
     pub fn literal<S: Into<String>>(mut self, segment_literal: S) -> Self {
@@ -656,6 +715,29 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_path_generic_float() {
+        assert_eq!(
+            parse_path_generic(
+                "/foo/1.2".to_owned(),
+                Schema{
+                    segments: vec![
+                        SegmentSchema::Literal("foo".to_owned()),
+                        SegmentSchema::Value(SegmentValueSchema{
+                            name: "foo".to_owned(),
+                            segment_type: SegmentType::F64,
+                        }),
+                    ],
+                },
+                ).unwrap(),
+            {
+                let mut map = HashMap::new();
+                map.insert("foo".to_owned(), SegmentValue::F64(1.2));
+                map
+            },
+            );
+    }
+
+    #[test]
     fn test_schema_building() {
         let schema = Schema::new()
             .literal("foo")
@@ -682,25 +764,39 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_path_generic_float() {
+    fn test_schema_path() {
         assert_eq!(
-            parse_path_generic(
-                "/foo/1.2".to_owned(),
-                Schema{
-                    segments: vec![
-                        SegmentSchema::Literal("foo".to_owned()),
-                        SegmentSchema::Value(SegmentValueSchema{
-                            name: "foo".to_owned(),
-                            segment_type: SegmentType::F64,
-                        }),
-                    ],
-                },
-                ).unwrap(),
-            {
-                let mut map = HashMap::new();
-                map.insert("foo".to_owned(), SegmentValue::F64(1.2));
-                map
-            },
+            Schema::path("/foo/<foo_id:u128>/bar/<bar_thing:String>").unwrap(),
+            Schema{
+                segments: vec![
+                    SegmentSchema::Literal("foo".to_owned()),
+                    SegmentSchema::Value(SegmentValueSchema{
+                        name: "foo_id".to_owned(),
+                        segment_type: SegmentType::U128,
+                    }),
+                    SegmentSchema::Literal("bar".to_owned()),
+                    SegmentSchema::Value(SegmentValueSchema{
+                        name: "bar_thing".to_owned(),
+                        segment_type: SegmentType::String,
+                    }),
+                ],
+            }
+            );
+    }
+
+    #[test]
+    fn test_schema_path_string_default() {
+        assert_eq!(
+            Schema::path("/foo/<bar>").unwrap(),
+            Schema{
+                segments: vec![
+                    SegmentSchema::Literal("foo".to_owned()),
+                    SegmentSchema::Value(SegmentValueSchema{
+                        name: "bar".to_owned(),
+                        segment_type: SegmentType::String,
+                    }),
+                ],
+            }
             );
     }
 
