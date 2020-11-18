@@ -738,6 +738,29 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_path_generic_signed_integer() {
+        assert_eq!(
+            parse_path_generic(
+                "/foo/-1".to_owned(),
+                Schema{
+                    segments: vec![
+                        SegmentSchema::Literal("foo".to_owned()),
+                        SegmentSchema::Value(SegmentValueSchema{
+                            name: "foo".to_owned(),
+                            segment_type: SegmentType::I128,
+                        }),
+                    ],
+                },
+                ).unwrap(),
+            {
+                let mut map = HashMap::new();
+                map.insert("foo".to_owned(), SegmentValue::I128(-1));
+                map
+            },
+            );
+    }
+
+    #[test]
     fn test_schema_building() {
         let schema = Schema::new()
             .literal("foo")
@@ -800,28 +823,6 @@ mod tests {
             );
     }
 
-    #[test]
-    fn test_parse_path_generic_signed_integer() {
-        assert_eq!(
-            parse_path_generic(
-                "/foo/-1".to_owned(),
-                Schema{
-                    segments: vec![
-                        SegmentSchema::Literal("foo".to_owned()),
-                        SegmentSchema::Value(SegmentValueSchema{
-                            name: "foo".to_owned(),
-                            segment_type: SegmentType::I128,
-                        }),
-                    ],
-                },
-                ).unwrap(),
-            {
-                let mut map = HashMap::new();
-                map.insert("foo".to_owned(), SegmentValue::I128(-1));
-                map
-            },
-            );
-    }
 
     #[test]
     fn test_parse_path_basic() {
