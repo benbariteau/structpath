@@ -1,4 +1,3 @@
-#[macro_use] extern crate maplit;
 extern crate serde;
 extern crate thiserror;
 
@@ -626,11 +625,13 @@ mod tests {
                         }),
                     ],
                 }
-                ).unwrap(),
-                hashmap!{
-                    "foo".to_owned() => SegmentValue::U64(1),
-                    "bar".to_owned() => SegmentValue::String("thing".to_owned()),
-                }
+            ).unwrap(),
+            {
+                let mut map = HashMap::new();
+                map.insert("foo".to_owned(), SegmentValue::U64(1));
+                map.insert("bar".to_owned(), SegmentValue::String("thing".to_owned()));
+                map
+            },
             );
     }
 
@@ -649,8 +650,10 @@ mod tests {
                     ],
                 },
                 ).unwrap(),
-            hashmap!{
-                "foo".to_owned() => SegmentValue::F64(1.2),
+            {
+                let mut map = HashMap::new();
+                map.insert("foo".to_owned(), SegmentValue::F64(1.2));
+                map
             },
             );
     }
@@ -670,8 +673,10 @@ mod tests {
                     ],
                 },
                 ).unwrap(),
-            hashmap!{
-                "foo".to_owned() => SegmentValue::I128(-1),
+            {
+                let mut map = HashMap::new();
+                map.insert("foo".to_owned(), SegmentValue::I128(-1));
+                map
             },
             );
     }

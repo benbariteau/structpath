@@ -8,5 +8,4 @@ edition = "2018"
 
 [dependencies]
 serde = { version = "^1.0.0", features = ["derive"] }
-maplit = "^1.0.0"
 thiserror = "^1.0.22"
