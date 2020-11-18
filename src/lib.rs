@@ -7,6 +7,7 @@ use std::num::{ParseFloatError, ParseIntError};
 use serde::de::Visitor;
 use std::fmt::Display;
 
+#[derive(PartialEq, Debug)]
 pub enum SegmentType {
     F32,
     F64,
@@ -23,9 +24,10 @@ pub enum SegmentType {
     String,
 }
 
+#[derive(PartialEq, Debug)]
 pub struct SegmentValueSchema {
-    pub name: String,
-    pub segment_type: SegmentType,
+    name: String,
+    segment_type: SegmentType,
 }
 
 #[derive(PartialEq, Debug, Clone)]
@@ -46,13 +48,31 @@ pub enum SegmentValue {
 }
 
 
+#[derive(PartialEq, Debug)]
 pub enum SegmentSchema {
     Literal(String),
     Value(SegmentValueSchema),
 }
 
+#[derive(PartialEq, Debug)]
 pub struct Schema {
-    pub segments: Vec<SegmentSchema>,
+    segments: Vec<SegmentSchema>,
+}
+
+impl Schema {
+    pub fn new() -> Self {
+        Self{segments: vec![]}
+    }
+
+    pub fn literal<S: Into<String>>(mut self, segment_literal: S) -> Self {
+        self.segments.push(SegmentSchema::Literal(segment_literal.into()));
+        self
+    }
+
+    pub fn value<S: Into<String>>(mut self, name: S, segment_type: SegmentType) -> Self {
+        self.segments.push(SegmentSchema::Value(SegmentValueSchema{name: name.into(), segment_type: segment_type}));
+        self
+    }
 }
 
 #[derive(Error, Debug)]
@@ -632,6 +652,32 @@ mod tests {
                 map.insert("bar".to_owned(), SegmentValue::String("thing".to_owned()));
                 map
             },
+            );
+    }
+
+    #[test]
+    fn test_schema_building() {
+        let schema = Schema::new()
+            .literal("foo")
+            .value("foo", SegmentType::U64)
+            .literal("bar")
+            .value("bar", SegmentType::String);
+        assert_eq!(
+            schema,
+                Schema{
+                    segments: vec![
+                        SegmentSchema::Literal("foo".to_owned()),
+                        SegmentSchema::Value(SegmentValueSchema{
+                            name: "foo".to_owned(),
+                            segment_type: SegmentType::U64,
+                        }),
+                        SegmentSchema::Literal("bar".to_owned()),
+                        SegmentSchema::Value(SegmentValueSchema{
+                            name: "bar".to_owned(),
+                            segment_type: SegmentType::String,
+                        }),
+                    ],
+                },
             );
     }
 
