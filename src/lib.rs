@@ -9,10 +9,10 @@ use serde::de::Visitor;
 use std::fmt::Display;
 
 pub enum SegmentType {
-    Float,
-    Integer,
+    F64,
+    I128,
     String,
-    UnsignedInteger,
+    U64,
 }
 
 pub struct SegmentValueSchema {
@@ -72,13 +72,13 @@ fn parse_path_generic(path: String, schema: Schema) -> Result<HashMap<String, Se
             }
             SegmentSchema::Value(segment_value_schema) => {
                 match segment_value_schema.segment_type {
-                    SegmentType::Float => {
+                    SegmentType::F64 => {
                         path_values.insert(segment_value_schema.name.clone(), SegmentValue::F64(segment.parse()?));
                     },
-                    SegmentType::Integer => {
+                    SegmentType::I128 => {
                         path_values.insert(segment_value_schema.name.clone(), SegmentValue::I128(segment.parse()?));
                     },
-                    SegmentType::UnsignedInteger => {
+                    SegmentType::U64 => {
                         path_values.insert(segment_value_schema.name.clone(), SegmentValue::U64(segment.parse()?));
                     },
                     SegmentType::String => {
@@ -529,7 +529,7 @@ mod tests {
                         SegmentSchema::Literal("foo".to_owned()),
                         SegmentSchema::Value(SegmentValueSchema{
                             name: "foo".to_owned(),
-                            segment_type: SegmentType::UnsignedInteger,
+                            segment_type: SegmentType::U64,
                         }),
                         SegmentSchema::Literal("bar".to_owned()),
                         SegmentSchema::Value(SegmentValueSchema{
@@ -556,7 +556,7 @@ mod tests {
                         SegmentSchema::Literal("foo".to_owned()),
                         SegmentSchema::Value(SegmentValueSchema{
                             name: "foo".to_owned(),
-                            segment_type: SegmentType::Float,
+                            segment_type: SegmentType::F64,
                         }),
                     ],
                 },
@@ -577,7 +577,7 @@ mod tests {
                         SegmentSchema::Literal("foo".to_owned()),
                         SegmentSchema::Value(SegmentValueSchema{
                             name: "foo".to_owned(),
-                            segment_type: SegmentType::Integer,
+                            segment_type: SegmentType::I128,
                         }),
                     ],
                 },
@@ -603,7 +603,7 @@ mod tests {
                     SegmentSchema::Literal("foo".to_owned()),
                     SegmentSchema::Value(SegmentValueSchema{
                         name: "foo".to_owned(),
-                        segment_type: SegmentType::UnsignedInteger,
+                        segment_type: SegmentType::U64,
                     }),
                     SegmentSchema::Literal("bar".to_owned()),
                     SegmentSchema::Value(SegmentValueSchema{
@@ -630,7 +630,7 @@ mod tests {
                     SegmentSchema::Literal("foo".to_owned()),
                     SegmentSchema::Value(SegmentValueSchema{
                         name: "foo".to_owned(),
-                        segment_type: SegmentType::Integer,
+                        segment_type: SegmentType::I128,
                     }),
                 ],
             },
@@ -652,7 +652,7 @@ mod tests {
                     SegmentSchema::Literal("foo".to_owned()),
                     SegmentSchema::Value(SegmentValueSchema{
                         name: "foo".to_owned(),
-                        segment_type: SegmentType::Float,
+                        segment_type: SegmentType::F64,
                     }),
                 ],
             },
