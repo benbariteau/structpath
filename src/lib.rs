@@ -71,6 +71,8 @@ pub enum StructPathError {
     SerdeInternalError(String),
     #[error("Error is impossible, but reqired structurrally")]
     Impossible,
+    #[error("Expected {0}, but got {1:?}")]
+    ExpectedType(String, SegmentValue),
 }
 
 impl serde::de::Error for StructPathError {
@@ -421,7 +423,7 @@ impl <'de, 'a> serde::de::Deserializer<'de> for ValueDeserializer {
     fn deserialize_i128<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
         match self.value {
             SegmentValue::I128(value) => visitor.visit_i128(value),
-            _ => unimplemented!(),
+            _ => Err(StructPathError::ExpectedType("i128".to_owned(), self.value)),
         }
     }
 
@@ -440,7 +442,7 @@ impl <'de, 'a> serde::de::Deserializer<'de> for ValueDeserializer {
     fn deserialize_u64<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
         match self.value {
             SegmentValue::U64(value) => visitor.visit_u64(value),
-            _ => unimplemented!(),
+            _ => Err(StructPathError::ExpectedType("u64".to_owned(), self.value)),
         }
     }
 
@@ -451,7 +453,7 @@ impl <'de, 'a> serde::de::Deserializer<'de> for ValueDeserializer {
     fn deserialize_f64<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
         match self.value {
             SegmentValue::F64(value) => visitor.visit_f64(value),
-            _ => unimplemented!(),
+            _ => Err(StructPathError::ExpectedType("f64".to_owned(), self.value)),
         }
     }
 
@@ -466,7 +468,7 @@ impl <'de, 'a> serde::de::Deserializer<'de> for ValueDeserializer {
     fn deserialize_string<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
         match self.value {
             SegmentValue::String(value) => visitor.visit_string(value.clone()),
-            _ => unimplemented!(),
+            _ => Err(StructPathError::ExpectedType("String".to_owned(), self.value)),
         }
     }
 
