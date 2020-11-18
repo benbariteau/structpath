@@ -133,7 +133,7 @@ impl Schema {
         self
     }
 
-    pub fn parse<'a, T>(&self, path: String) -> Result<T, StructPathError> where T: serde::Deserialize<'a> {
+    pub fn parse<'a, S, T>(&self, path: S) -> Result<T, StructPathError> where S: Into<String>, T: serde::Deserialize<'a> {
         parse_path(path, self)
     }
 }
@@ -679,8 +679,8 @@ impl <'de, 'a> serde::de::Deserializer<'de> for ValueDeserializer {
     }
 }
 
-pub fn parse_path<'a, T>(path: String, schema: &Schema) -> Result<T, StructPathError> where T: serde::Deserialize<'a> {
-    let generic_parsed_path_value = parse_path_generic(path, schema)?;
+pub fn parse_path<'a, S, T>(path: S, schema: &Schema) -> Result<T, StructPathError> where S: Into<String>, T: serde::Deserialize<'a> {
+    let generic_parsed_path_value = parse_path_generic(path.into(), schema)?;
     let deserializer = Deserializer{generic_parsed_path: generic_parsed_path_value};
     T::deserialize(&deserializer)
 }
