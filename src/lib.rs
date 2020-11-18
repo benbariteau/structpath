@@ -599,7 +599,7 @@ impl <'de, 'a> serde::de::Deserializer<'de> for ValueDeserializer {
 
 pub fn parse_path<'a, T>(path: String, schema: Schema) -> Result<T, StructPathError> where T: serde::Deserialize<'a> {
     let generic_parsed_path_value = parse_path_generic(path, schema)?;
-    let mut deserializer = Deserializer{generic_parsed_path: generic_parsed_path_value};
+    let deserializer = Deserializer{generic_parsed_path: generic_parsed_path_value};
     T::deserialize(&deserializer)
 }
 
