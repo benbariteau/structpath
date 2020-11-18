@@ -3,6 +3,13 @@ name = "structpath"
 version = "0.1.0"
 authors = ["Ben Bariteau <\"ben.bariteau@gmail.com\">"]
 edition = "2018"
+license-file = "LICENSE"
+description = "library type-safe parsing and generation of url paths"
+homepage = "https://github.com/firba1/structpath"
+repository = "https://github.com/firba1/structpath"
+readme = "README.md"
+keywords = ["parsing", "url", "web"]
+categories = ["parser-implementations", "web-programming"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
