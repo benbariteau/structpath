@@ -163,6 +163,11 @@ pub enum StructPathError {
     NotSupported(String),
     #[error("Expected field {0:?} missing from input")]
     MissingField(String),
+    #[error("Expected states: {expected}, got {got:?}")]
+    InvalidSerializerState{
+        expected: String,
+        got: SerializerState,
+    },
 }
 
 impl serde::de::Error for StructPathError {
@@ -697,9 +702,17 @@ pub fn parse_path<'a, S, T>(path: S, schema: &Schema) -> Result<T, StructPathErr
     T::deserialize(&deserializer)
 }
 
+#[derive(Debug, Clone)]
+pub enum SerializerState {
+    Start, // starting, expecting a struct
+    StructKey,  // in a struct, about to parse next key
+    StructValue(String),  // about to serialize a struct value, this holds the key
+    End,  // ending, not expecting any other states
+}
+
 struct Serializer{
-    last_key: String,
     serialized_values: HashMap<String, String>,
+    state: SerializerState,
 }
 
 impl<'a> serde::ser::Serializer for &'a mut Serializer {
@@ -719,62 +732,170 @@ impl<'a> serde::ser::Serializer for &'a mut Serializer {
     }
 
     fn serialize_i8(self, v: i8) -> Result<(), StructPathError> {
-        self.serialized_values.insert(self.last_key.clone(), v.to_string());
+        self.state = match &self.state {
+            SerializerState::StructValue(key) => {
+                self.serialized_values.insert(key.clone(), v.to_string());
+                SerializerState::StructKey
+            },
+            _ => return Err(StructPathError::InvalidSerializerState{
+                expected: "StructValue".to_owned(),
+                got: self.state.clone(),
+            }),
+        };
         Ok(())
     }
 
     fn serialize_i16(self, v: i16) -> Result<(), StructPathError> {
-        self.serialized_values.insert(self.last_key.clone(), v.to_string());
+        self.state = match &self.state {
+            SerializerState::StructValue(key) => {
+                self.serialized_values.insert(key.clone(), v.to_string());
+                SerializerState::StructKey
+            },
+            _ => return Err(StructPathError::InvalidSerializerState{
+                expected: "StructValue".to_owned(),
+                got: self.state.clone(),
+            }),
+        };
         Ok(())
     }
 
     fn serialize_i32(self, v: i32) -> Result<(), StructPathError> {
-        self.serialized_values.insert(self.last_key.clone(), v.to_string());
+        self.state = match &self.state {
+            SerializerState::StructValue(key) => {
+                self.serialized_values.insert(key.clone(), v.to_string());
+                SerializerState::StructKey
+            },
+            _ => return Err(StructPathError::InvalidSerializerState{
+                expected: "StructValue".to_owned(),
+                got: self.state.clone(),
+            }),
+        };
         Ok(())
     }
 
     fn serialize_i64(self, v: i64) -> Result<(), StructPathError> {
-        self.serialized_values.insert(self.last_key.clone(), v.to_string());
+        self.state = match &self.state {
+            SerializerState::StructValue(key) => {
+                self.serialized_values.insert(key.clone(), v.to_string());
+                SerializerState::StructKey
+            },
+            _ => return Err(StructPathError::InvalidSerializerState{
+                expected: "StructValue".to_owned(),
+                got: self.state.clone(),
+            }),
+        };
         Ok(())
     }
 
     fn serialize_i128(self, v: i128) -> Result<(), StructPathError> {
-        self.serialized_values.insert(self.last_key.clone(), v.to_string());
+        self.state = match &self.state {
+            SerializerState::StructValue(key) => {
+                self.serialized_values.insert(key.clone(), v.to_string());
+                SerializerState::StructKey
+            },
+            _ => return Err(StructPathError::InvalidSerializerState{
+                expected: "StructValue".to_owned(),
+                got: self.state.clone(),
+            }),
+        };
         Ok(())
     }
 
     fn serialize_u8(self, v: u8) -> Result<(), StructPathError> {
-        self.serialized_values.insert(self.last_key.clone(), v.to_string());
+        self.state = match &self.state {
+            SerializerState::StructValue(key) => {
+                self.serialized_values.insert(key.clone(), v.to_string());
+                SerializerState::StructKey
+            },
+            _ => return Err(StructPathError::InvalidSerializerState{
+                expected: "StructValue".to_owned(),
+                got: self.state.clone(),
+            }),
+        };
         Ok(())
     }
 
     fn serialize_u16(self, v: u16) -> Result<(), StructPathError> {
-        self.serialized_values.insert(self.last_key.clone(), v.to_string());
+        self.state = match &self.state {
+            SerializerState::StructValue(key) => {
+                self.serialized_values.insert(key.clone(), v.to_string());
+                SerializerState::StructKey
+            },
+            _ => return Err(StructPathError::InvalidSerializerState{
+                expected: "StructValue".to_owned(),
+                got: self.state.clone(),
+            }),
+        };
         Ok(())
     }
 
     fn serialize_u32(self, v: u32) -> Result<(), StructPathError> {
-        self.serialized_values.insert(self.last_key.clone(), v.to_string());
+        self.state = match &self.state {
+            SerializerState::StructValue(key) => {
+                self.serialized_values.insert(key.clone(), v.to_string());
+                SerializerState::StructKey
+            },
+            _ => return Err(StructPathError::InvalidSerializerState{
+                expected: "StructValue".to_owned(),
+                got: self.state.clone(),
+            }),
+        };
         Ok(())
     }
 
     fn serialize_u64(self, v: u64) -> Result<(), StructPathError> {
-        self.serialized_values.insert(self.last_key.clone(), v.to_string());
+        self.state = match &self.state {
+            SerializerState::StructValue(key) => {
+                self.serialized_values.insert(key.clone(), v.to_string());
+                SerializerState::StructKey
+            },
+            _ => return Err(StructPathError::InvalidSerializerState{
+                expected: "StructValue".to_owned(),
+                got: self.state.clone(),
+            }),
+        };
         Ok(())
     }
 
     fn serialize_u128(self, v: u128) -> Result<(), StructPathError> {
-        self.serialized_values.insert(self.last_key.clone(), v.to_string());
+        self.state = match &self.state {
+            SerializerState::StructValue(key) => {
+                self.serialized_values.insert(key.clone(), v.to_string());
+                SerializerState::StructKey
+            },
+            _ => return Err(StructPathError::InvalidSerializerState{
+                expected: "StructValue".to_owned(),
+                got: self.state.clone(),
+            }),
+        };
         Ok(())
     }
 
     fn serialize_f32(self, v: f32) -> Result<(), StructPathError> {
-        self.serialized_values.insert(self.last_key.clone(), v.to_string());
+        self.state = match &self.state {
+            SerializerState::StructValue(key) => {
+                self.serialized_values.insert(key.clone(), v.to_string());
+                SerializerState::StructKey
+            },
+            _ => return Err(StructPathError::InvalidSerializerState{
+                expected: "StructValue".to_owned(),
+                got: self.state.clone(),
+            }),
+        };
         Ok(())
     }
 
     fn serialize_f64(self, v: f64) -> Result<(), StructPathError> {
-        self.serialized_values.insert(self.last_key.clone(), v.to_string());
+        self.state = match &self.state {
+            SerializerState::StructValue(key) => {
+                self.serialized_values.insert(key.clone(), v.to_string());
+                SerializerState::StructKey
+            },
+            _ => return Err(StructPathError::InvalidSerializerState{
+                expected: "StructValue".to_owned(),
+                got: self.state.clone(),
+            }),
+        };
         Ok(())
     }
 
@@ -783,7 +904,16 @@ impl<'a> serde::ser::Serializer for &'a mut Serializer {
     }
 
     fn serialize_str(self, v: &str) -> Result<(), StructPathError> {
-        self.serialized_values.insert(self.last_key.clone(), v.to_owned());
+        self.state = match &self.state {
+            SerializerState::StructValue(key) => {
+                self.serialized_values.insert(key.clone(), v.to_owned());
+                SerializerState::StructKey
+            },
+            _ => return Err(StructPathError::InvalidSerializerState{
+                expected: "StructValue".to_owned(),
+                got: self.state.clone(),
+            }),
+        };
         Ok(())
     }
 
@@ -870,6 +1000,7 @@ impl<'a> serde::ser::Serializer for &'a mut Serializer {
         _name: &'static str,
         _len: usize,
         ) -> Result<Self::SerializeStruct, StructPathError> {
+        self.state = SerializerState::StructKey;
         Ok(self)
     }
 
@@ -959,12 +1090,21 @@ impl<'a> serde::ser::SerializeStruct for &'a mut Serializer {
     type Error = StructPathError;
 
     fn serialize_field<T>(&mut self, key: &'static str, value: &T) -> Result<(), StructPathError> where T: ?Sized + serde::Serialize {
-        self.last_key = key.to_owned();
+        self.state = match self.state {
+            SerializerState::StructKey => {
+                SerializerState::StructValue(key.to_owned())
+            },
+            _ => return Err(StructPathError::InvalidSerializerState{
+                expected: "StructKey".to_owned(),
+                got: self.state.clone(),
+            }),
+        };
         value.serialize(&mut **self)?;
         Ok(())
     }
 
     fn end(self) -> Result<(), StructPathError> {
+        self.state = SerializerState::End;
         Ok(())
     }
 }
@@ -984,8 +1124,8 @@ impl<'a> serde::ser::SerializeStructVariant for &'a mut Serializer {
 
 fn generate_path<T>(parameters: &T, schema: &Schema) -> Result<String, StructPathError> where T: serde::Serialize {
     let mut serializer = Serializer{
-        last_key: "".to_owned(),
         serialized_values: HashMap::new(),
+        state: SerializerState::Start,
     };
     parameters.serialize(&mut serializer)?;
     let mut generated_path = String::new();
@@ -1245,6 +1385,7 @@ mod tests {
 
     #[test]
     fn test_roundtrip() {
+
         #[derive(Deserialize, Serialize, PartialEq, Debug)]
         struct Parameters{
             foo: u64,
@@ -1256,5 +1397,6 @@ mod tests {
         let parameters: Parameters = path_schema.parse(test_path).unwrap();
         assert_eq!(parameters, Parameters{foo: 1, bar: "thing".to_owned()});
         assert_eq!(path_schema.generate(&parameters).unwrap(), test_path);
+
     }
 }
