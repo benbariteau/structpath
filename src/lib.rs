@@ -257,10 +257,15 @@ pub enum StructPathError {
     NotSupported(String),
     #[error("Expected field {0:?} missing from input")]
     MissingField(String),
-    #[error("Expected states: {expected}, got {got:?}")]
+    #[error("Expected state(s): {expected}, got {got:?}")]
     InvalidSerializerState{
         expected: String,
         got: SerializerState,
+    },
+    #[error("Expected state(s): {expected}, got {got:?}")]
+    InvalidDeserializerState{
+        expected: String,
+        got: DeserializerState,
     },
 }
 
@@ -333,11 +338,22 @@ fn parse_path_generic(path: String, schema: &Schema) -> Result<HashMap<String, S
     Ok(path_values)
 }
 
-struct Deserializer {
-    generic_parsed_path: HashMap<String, SegmentValue>,
+/// Internal state for Deserializer, usually only useful for debugging.
+#[derive(Clone, Debug)]
+pub enum DeserializerState {
+    Start,
+    Map,
+    MapKey(String),
+    MapValue(SegmentValue),
+    End,
 }
 
-impl <'de, 'a> serde::de::Deserializer<'de> for &'a Deserializer {
+struct Deserializer {
+    generic_parsed_path: HashMap<String, SegmentValue>,
+    state: DeserializerState,
+}
+
+impl <'de, 'a> serde::de::Deserializer<'de> for &'a mut Deserializer {
     type Error = StructPathError;
 
     fn deserialize_any<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
@@ -348,64 +364,207 @@ impl <'de, 'a> serde::de::Deserializer<'de> for &'a Deserializer {
         Err(StructPathError::NotSupported("bool".to_owned()))
     }
 
-    fn deserialize_i8<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("i8".to_owned()))
+    fn deserialize_i8<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
+        let (next_state, result) = match &self.state {
+            DeserializerState::MapValue(segment_value) => match segment_value {
+                SegmentValue::I8(value) => (DeserializerState::Map, visitor.visit_i8(*value)),
+                _ => return Err(StructPathError::ExpectedType("i8".to_owned(), segment_value.clone())),
+            },
+            _ => return Err(StructPathError::InvalidDeserializerState{
+                expected: "MapValue".to_owned(),
+                got: self.state.clone(),
+            })
+        };
+        self.state = next_state;
+        result
     }
 
-    fn deserialize_i16<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("i16".to_owned()))
+    fn deserialize_i16<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
+        let (next_state, result) = match &self.state {
+            DeserializerState::MapValue(segment_value) => match segment_value {
+                SegmentValue::I16(value) => (DeserializerState::Map, visitor.visit_i16(*value)),
+                _ => return Err(StructPathError::ExpectedType("i16".to_owned(), segment_value.clone())),
+            },
+            _ => return Err(StructPathError::InvalidDeserializerState{
+                expected: "MapValue".to_owned(),
+                got: self.state.clone(),
+            })
+        };
+        self.state = next_state;
+        result
     }
 
-    fn deserialize_i32<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("i32".to_owned()))
+    fn deserialize_i32<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
+        let (next_state, result) = match &self.state {
+            DeserializerState::MapValue(segment_value) => match segment_value {
+                SegmentValue::I32(value) => (DeserializerState::Map, visitor.visit_i32(*value)),
+                _ => return Err(StructPathError::ExpectedType("i32".to_owned(), segment_value.clone())),
+            },
+            _ => return Err(StructPathError::InvalidDeserializerState{
+                expected: "MapValue".to_owned(),
+                got: self.state.clone(),
+            })
+        };
+        self.state = next_state;
+        result
     }
 
-    fn deserialize_i64<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("i64".to_owned()))
+    fn deserialize_i64<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
+        let (next_state, result) = match &self.state {
+            DeserializerState::MapValue(segment_value) => match segment_value {
+                SegmentValue::I64(value) => (DeserializerState::Map, visitor.visit_i64(*value)),
+                _ => return Err(StructPathError::ExpectedType("i64".to_owned(), segment_value.clone())),
+            },
+            _ => return Err(StructPathError::InvalidDeserializerState{
+                expected: "MapValue".to_owned(),
+                got: self.state.clone(),
+            })
+        };
+        self.state = next_state;
+        result
     }
 
-    fn deserialize_i128<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("i128".to_owned()))
+    fn deserialize_i128<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
+        let (next_state, result) = match &self.state {
+            DeserializerState::MapValue(segment_value) => match segment_value {
+                SegmentValue::I128(value) => (DeserializerState::Map, visitor.visit_i128(*value)),
+                _ => return Err(StructPathError::ExpectedType("i128".to_owned(), segment_value.clone())),
+            },
+            _ => return Err(StructPathError::InvalidDeserializerState{
+                expected: "MapValue".to_owned(),
+                got: self.state.clone(),
+            })
+        };
+        self.state = next_state;
+        result
     }
 
-    fn deserialize_u8<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("u8".to_owned()))
+    fn deserialize_u8<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
+        let (next_state, result) = match &self.state {
+            DeserializerState::MapValue(segment_value) => match segment_value {
+                SegmentValue::U8(value) => (DeserializerState::Map, visitor.visit_u8(*value)),
+                _ => return Err(StructPathError::ExpectedType("u8".to_owned(), segment_value.clone())),
+            },
+            _ => return Err(StructPathError::InvalidDeserializerState{
+                expected: "MapValue".to_owned(),
+                got: self.state.clone(),
+            })
+        };
+        self.state = next_state;
+        result
     }
 
-    fn deserialize_u16<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("u16".to_owned()))
+    fn deserialize_u16<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
+        let (next_state, result) = match &self.state {
+            DeserializerState::MapValue(segment_value) => match segment_value {
+                SegmentValue::U64(value) => (DeserializerState::Map, visitor.visit_u64(*value)),
+                _ => return Err(StructPathError::ExpectedType("u64".to_owned(), segment_value.clone())),
+            },
+            _ => return Err(StructPathError::InvalidDeserializerState{
+                expected: "MapValue".to_owned(),
+                got: self.state.clone(),
+            })
+        };
+        self.state = next_state;
+        result
     }
 
-    fn deserialize_u32<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("u32".to_owned()))
+    fn deserialize_u32<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
+        let (next_state, result) = match &self.state {
+            DeserializerState::MapValue(segment_value) => match segment_value {
+                SegmentValue::U64(value) => (DeserializerState::Map, visitor.visit_u64(*value)),
+                _ => return Err(StructPathError::ExpectedType("u64".to_owned(), segment_value.clone())),
+            },
+            _ => return Err(StructPathError::InvalidDeserializerState{
+                expected: "MapValue".to_owned(),
+                got: self.state.clone(),
+            })
+        };
+        self.state = next_state;
+        result
     }
 
-    fn deserialize_u64<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("u64".to_owned()))
+    fn deserialize_u64<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
+        let (next_state, result) = match &self.state {
+            DeserializerState::MapValue(segment_value) => match segment_value {
+                SegmentValue::U64(value) => (DeserializerState::Map, visitor.visit_u64(*value)),
+                _ => return Err(StructPathError::ExpectedType("u64".to_owned(), segment_value.clone())),
+            },
+            _ => return Err(StructPathError::InvalidDeserializerState{
+                expected: "MapValue".to_owned(),
+                got: self.state.clone(),
+            })
+        };
+        self.state = next_state;
+        result
     }
 
-    fn deserialize_u128<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("u128".to_owned()))
+    fn deserialize_u128<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
+        let (next_state, result) = match &self.state {
+            DeserializerState::MapValue(segment_value) => match segment_value {
+                SegmentValue::U128(value) => (DeserializerState::Map, visitor.visit_u128(*value)),
+                _ => return Err(StructPathError::ExpectedType("u128".to_owned(), segment_value.clone())),
+            },
+            _ => return Err(StructPathError::InvalidDeserializerState{
+                expected: "MapValue".to_owned(),
+                got: self.state.clone(),
+            })
+        };
+        self.state = next_state;
+        result
     }
 
-    fn deserialize_f32<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("f32".to_owned()))
+    fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
+        let (next_state, result) = match &self.state {
+            DeserializerState::MapValue(segment_value) => match segment_value {
+                SegmentValue::F32(value) => (DeserializerState::Map, visitor.visit_f32(*value)),
+                _ => return Err(StructPathError::ExpectedType("f32".to_owned(), segment_value.clone())),
+            },
+            _ => return Err(StructPathError::InvalidDeserializerState{
+                expected: "MapValue".to_owned(),
+                got: self.state.clone(),
+            })
+        };
+        self.state = next_state;
+        result
     }
 
-    fn deserialize_f64<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("f64".to_owned()))
+    fn deserialize_f64<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
+        let (next_state, result) = match &self.state {
+            DeserializerState::MapValue(segment_value) => match segment_value {
+                SegmentValue::F64(value) => (DeserializerState::Map, visitor.visit_f64(*value)),
+                _ => return Err(StructPathError::ExpectedType("f64".to_owned(), segment_value.clone())),
+            },
+            _ => return Err(StructPathError::InvalidDeserializerState{
+                expected: "MapValue".to_owned(),
+                got: self.state.clone(),
+            })
+        };
+        self.state = next_state;
+        result
     }
 
     fn deserialize_char<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
         Err(StructPathError::NotSupported("char".to_owned()))
     }
 
-    fn deserialize_str<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("&str".to_owned()))
+    fn deserialize_str<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
+        self.deserialize_string(visitor)
     }
 
-    fn deserialize_string<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("String".to_owned()))
+    fn deserialize_string<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
+        let (next_state, result) = match &self.state {
+            DeserializerState::MapValue(segment_value) => match segment_value {
+                SegmentValue::String(value) => (DeserializerState::Map, visitor.visit_string(value.clone())),
+                _ => return Err(StructPathError::ExpectedType("String".to_owned(), segment_value.clone())),
+            },
+            _ => return Err(StructPathError::InvalidDeserializerState{
+                expected: "MapValue".to_owned(),
+                got: self.state.clone(),
+            })
+        };
+        self.state = next_state;
+        result
     }
 
     fn deserialize_bytes<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
@@ -444,12 +603,15 @@ impl <'de, 'a> serde::de::Deserializer<'de> for &'a Deserializer {
         Err(StructPathError::NotSupported("tuple struct".to_owned()))
     }
 
-    fn deserialize_map<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        visitor.visit_map(MapAccess{
-            deserializer: &self,
-            keys: self.generic_parsed_path.keys().cloned().collect(),
-            last_key: "".to_owned(),
-        })
+    fn deserialize_map<V>(mut self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
+        self.state = match self.state {
+            DeserializerState::Start => DeserializerState::Map,
+            _ => return Err(StructPathError::InvalidDeserializerState{
+                expected: "Start".to_owned(),
+                got: self.state.clone(),
+            }),
+        };
+        visitor.visit_map(self)
     }
 
     fn deserialize_struct<V>(self, _name: &'static str, _fields: &'static [&'static str], visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
@@ -460,8 +622,14 @@ impl <'de, 'a> serde::de::Deserializer<'de> for &'a Deserializer {
         Err(StructPathError::NotSupported("enum".to_owned()))
     }
 
-    fn deserialize_identifier<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("identifier".to_owned()))
+    fn deserialize_identifier<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
+        match &self.state {
+            DeserializerState::MapKey(key) => visitor.visit_string(key.clone()),
+            _ => Err(StructPathError::InvalidDeserializerState{
+                expected: "MapKey".to_string(),
+                got: self.state.clone(),
+            }),
+        }
     }
 
     fn deserialize_ignored_any<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
@@ -469,324 +637,48 @@ impl <'de, 'a> serde::de::Deserializer<'de> for &'a Deserializer {
     }
 }
 
-struct MapAccess<'a> {
-    deserializer: &'a Deserializer,
-    keys: Vec<String>,
-    last_key: String,
-}
-
-impl<'de, 'a> serde::de::MapAccess<'de> for MapAccess<'a> {
+impl<'de, 'a> serde::de::MapAccess<'de> for &'a mut Deserializer {
     type Error = StructPathError;
+
     fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>, Self::Error> where K: serde::de::DeserializeSeed<'de> {
-        if self.keys.len() == 0 {
+        let (has_next_key, next_state) = match self.state {
+            DeserializerState::Map => {
+                match self.generic_parsed_path.keys().nth(0) {
+                    Some(key) => (true, DeserializerState::MapKey(key.clone())),
+                    None => (false, DeserializerState::End),
+                }
+            }
+            _ => return Err(StructPathError::InvalidDeserializerState{
+                expected: "Map".to_string(),
+                got: self.state.clone(),
+            }),
+        };
+        self.state = next_state;
+        if !has_next_key {
             return Ok(None)
         }
-        {
-            let next_key = &self.keys[0];
-            self.last_key = next_key.clone();
+        match &self.state {
+            DeserializerState::MapKey(_) => seed.deserialize(&mut **self).map(Some),
+            _ => Err(StructPathError::InvalidDeserializerState{
+                expected: "MapKey".to_string(),
+                got: self.state.clone(),
+            }),
         }
-        self.keys = self.keys.iter().skip(1).cloned().collect();
-        seed.deserialize(IdentDeserializer{ident: self.last_key.clone()}).map(Some)
     }
 
     fn next_value_seed<V>(&mut self, seed: V) -> Result<V::Value, Self::Error>  where V: serde::de::DeserializeSeed<'de> {
-        let value = self.deserializer.generic_parsed_path.get(&self.last_key).ok_or(StructPathError::Impossible)?;
-        seed.deserialize(ValueDeserializer{value: value.clone()})
-    }
-}
-
-struct IdentDeserializer{
-    ident: String,
-}
-
-impl <'de> serde::de::Deserializer<'de> for IdentDeserializer {
-    type Error = StructPathError;
-
-    fn deserialize_any<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("deserialize_any".to_owned()))
-    }
-
-    fn deserialize_bool<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("bool".to_owned()))
-    }
-
-    fn deserialize_i8<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("i8".to_owned()))
-    }
-
-    fn deserialize_i16<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("i16".to_owned()))
-    }
-
-    fn deserialize_i32<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("i32".to_owned()))
-    }
-
-    fn deserialize_i64<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("i64".to_owned()))
-    }
-
-    fn deserialize_u8<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("u8".to_owned()))
-    }
-
-    fn deserialize_u16<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("u16".to_owned()))
-    }
-
-    fn deserialize_u32<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("u32".to_owned()))
-    }
-
-    fn deserialize_u64<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("u64".to_owned()))
-    }
-
-    fn deserialize_f32<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("f32".to_owned()))
-    }
-
-    fn deserialize_f64<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("f64".to_owned()))
-    }
-
-    fn deserialize_char<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("char".to_owned()))
-    }
-
-    fn deserialize_str<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        visitor.visit_string(self.ident.clone())
-    }
-
-    fn deserialize_string<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        self.deserialize_str(visitor)
-    }
-
-    fn deserialize_bytes<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("bytes".to_owned()))
-    }
-
-    fn deserialize_byte_buf<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("byte_buf".to_owned()))
-    }
-
-    fn deserialize_option<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("Option".to_owned()))
-    }
-
-    fn deserialize_unit<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("()".to_owned()))
-    }
-
-    fn deserialize_unit_struct<V>(self, _name: &'static str, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("unit struct".to_owned()))
-    }
-
-    fn deserialize_newtype_struct<V>(self, _name: &'static str, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("newtype struct".to_owned()))
-    }
-
-    fn deserialize_seq<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("sequence".to_owned()))
-    }
-
-    fn deserialize_tuple<V>(self, _len: usize, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("len".to_owned()))
-    }
-
-    fn deserialize_tuple_struct<V>(self, _name: &'static str, _len: usize, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("tuple struct".to_owned()))
-    }
-
-    fn deserialize_map<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("map".to_owned()))
-    }
-
-    fn deserialize_struct<V>(self, _name: &'static str, _fields: &'static [&'static str], _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("struct".to_owned()))
-    }
-
-    fn deserialize_enum<V>(self, _name: &'static str, _variants: &'static [&'static str], _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("enum".to_owned()))
-    }
-
-    fn deserialize_identifier<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        self.deserialize_str(visitor)
-    }
-
-    fn deserialize_ignored_any<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("deserialize_ignored_any".to_owned()))
-    }
-}
-
-struct ValueDeserializer {
-    value: SegmentValue,
-}
-
-impl <'de, 'a> serde::de::Deserializer<'de> for ValueDeserializer {
-    type Error = StructPathError;
-
-    fn deserialize_any<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("deserialize_any".to_owned()))
-    }
-
-    fn deserialize_bool<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("bool".to_owned()))
-    }
-
-    fn deserialize_i8<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        match self.value {
-            SegmentValue::I8(value) => visitor.visit_i8(value),
-            _ => Err(StructPathError::ExpectedType("i8".to_owned(), self.value)),
-        }
-    }
-
-    fn deserialize_i16<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        match self.value {
-            SegmentValue::I16(value) => visitor.visit_i16(value),
-            _ => Err(StructPathError::ExpectedType("i16".to_owned(), self.value)),
-        }
-    }
-
-    fn deserialize_i32<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        match self.value {
-            SegmentValue::I32(value) => visitor.visit_i32(value),
-            _ => Err(StructPathError::ExpectedType("i32".to_owned(), self.value)),
-        }
-    }
-
-    fn deserialize_i64<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        match self.value {
-            SegmentValue::I64(value) => visitor.visit_i64(value),
-            _ => Err(StructPathError::ExpectedType("i64".to_owned(), self.value)),
-        }
-    }
-
-    fn deserialize_i128<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        match self.value {
-            SegmentValue::I128(value) => visitor.visit_i128(value),
-            _ => Err(StructPathError::ExpectedType("i128".to_owned(), self.value)),
-        }
-    }
-
-    fn deserialize_u8<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        match self.value {
-            SegmentValue::U8(value) => visitor.visit_u8(value),
-            _ => Err(StructPathError::ExpectedType("u8".to_owned(), self.value)),
-        }
-    }
-
-    fn deserialize_u16<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        match self.value {
-            SegmentValue::U16(value) => visitor.visit_u16(value),
-            _ => Err(StructPathError::ExpectedType("u16".to_owned(), self.value)),
-        }
-    }
-
-    fn deserialize_u32<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        match self.value {
-            SegmentValue::U32(value) => visitor.visit_u32(value),
-            _ => Err(StructPathError::ExpectedType("u32".to_owned(), self.value)),
-        }
-    }
-
-    fn deserialize_u64<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        match self.value {
-            SegmentValue::U64(value) => visitor.visit_u64(value),
-            _ => Err(StructPathError::ExpectedType("u64".to_owned(), self.value)),
-        }
-    }
-
-    fn deserialize_u128<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        match self.value {
-            SegmentValue::U128(value) => visitor.visit_u128(value),
-            _ => Err(StructPathError::ExpectedType("u128".to_owned(), self.value)),
-        }
-    }
-
-    fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        match self.value {
-            SegmentValue::F32(value) => visitor.visit_f32(value),
-            _ => Err(StructPathError::ExpectedType("f32".to_owned(), self.value)),
-        }
-    }
-
-    fn deserialize_f64<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        match self.value {
-            SegmentValue::F64(value) => visitor.visit_f64(value),
-            _ => Err(StructPathError::ExpectedType("f64".to_owned(), self.value)),
-        }
-    }
-
-    fn deserialize_char<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("char".to_owned()))
-    }
-
-    fn deserialize_str<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        self.deserialize_string(visitor)
-    }
-
-    fn deserialize_string<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        match self.value {
-            SegmentValue::String(value) => visitor.visit_string(value.clone()),
-            _ => Err(StructPathError::ExpectedType("String".to_owned(), self.value)),
-        }
-    }
-
-    fn deserialize_bytes<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("bytes".to_owned()))
-    }
-
-    fn deserialize_byte_buf<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("byte_buf".to_owned()))
-    }
-
-    fn deserialize_option<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("Option".to_owned()))
-    }
-
-    fn deserialize_unit<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("()".to_owned()))
-    }
-
-    fn deserialize_unit_struct<V>(self, _name: &'static str, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("unit struct".to_owned()))
-    }
-
-    fn deserialize_newtype_struct<V>(self, _name: &'static str, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("newtype struct".to_owned()))
-    }
-
-    fn deserialize_seq<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("sequence".to_owned()))
-    }
-
-    fn deserialize_tuple<V>(self, _len: usize, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("tuple".to_owned()))
-    }
-
-    fn deserialize_tuple_struct<V>(self, _name: &'static str, _len: usize, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("tuple struct".to_owned()))
-    }
-
-    fn deserialize_map<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("map".to_owned()))
-    }
-
-    fn deserialize_struct<V>(self, _name: &'static str, _fields: &'static [&'static str], _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("struct".to_owned()))
-    }
-
-    fn deserialize_enum<V>(self, _name: &'static str, _variants: &'static [&'static str], _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("enum".to_owned()))
-    }
-
-    fn deserialize_identifier<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("identifier".to_owned()))
-    }
-
-    fn deserialize_ignored_any<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'de> {
-        Err(StructPathError::NotSupported("deserialize_ignored_any".to_owned()))
+        let value = match &self.state {
+            DeserializerState::MapKey(key) => match self.generic_parsed_path.remove(key) {
+                Some(value) => value.clone(),
+                None => return Err(StructPathError::Impossible),
+            },
+            _ => return Err(StructPathError::InvalidDeserializerState{
+                expected: "MapValue".to_string(),
+                got: self.state.clone(),
+            }),
+        };
+        self.state = DeserializerState::MapValue(value.clone());
+        seed.deserialize(&mut **self)
     }
 }
 
@@ -795,8 +687,11 @@ impl <'de, 'a> serde::de::Deserializer<'de> for ValueDeserializer {
 /// Typical errors will include when the Schema doesn't match T's structure.
 pub fn parse_path<'a, S, T>(path: S, schema: &Schema) -> Result<T, StructPathError> where S: Into<String>, T: serde::Deserialize<'a> {
     let generic_parsed_path_value = parse_path_generic(path.into(), schema)?;
-    let deserializer = Deserializer{generic_parsed_path: generic_parsed_path_value};
-    T::deserialize(&deserializer)
+    let mut deserializer = Deserializer{
+        generic_parsed_path: generic_parsed_path_value,
+        state: DeserializerState::Start,
+    };
+    T::deserialize(&mut deserializer)
 }
 
 /// Internal state used by the Serializer, typically only used for debugging.
