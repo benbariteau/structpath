@@ -1,3 +1,34 @@
+//! structpath is a libary which allows parsing and generating url paths in a convenient type safe way.
+//!
+//! structpath leverages serde to help parse values into structs.
+//!
+//! # Examples
+//!
+//! ## Basic example
+//!
+//! ```rust,ignore
+//! use serde::{Deserialize, Serialize};
+//! use structpath::Schema;
+//!
+//! #[derive(Deserialize)]
+//! struct FooParams {
+//!     foo_id: u128,
+//!     bar: String,
+//! }
+//!
+//! const foo_path = "/foo/<foo_id:u128>/bar/<bar>";
+//!
+//! // This is a general idea of a web request handler, not important for the demonstration
+//! fn foo_bar(request: Request) -> Response {
+//!     let params: FooParams = Schema::path(foo_path).parse(request.path);
+//! }
+//!
+//! fn baz(request: Request) -> Response {
+//!     let foo_path = Schema::path(foo_path).generate(FooParams{foo_id: foo_id, bar: bar});
+//!     Response::Redirect(foo_path)
+//! }
+//! ```
+
 extern crate serde;
 extern crate thiserror;
 
@@ -7,6 +38,7 @@ use std::num::{ParseFloatError, ParseIntError};
 use serde::de::Visitor;
 use std::fmt::Display;
 
+/// SegmentType is a basic enum for specifying what type a segment's value is.
 #[derive(PartialEq, Debug)]
 pub enum SegmentType {
     F32,
@@ -24,12 +56,18 @@ pub enum SegmentType {
     String,
 }
 
+/// SegmentValueSchema holds the schema for a particular value segment.
+///
+/// See `SegmentSchema` for more details.
 #[derive(PartialEq, Debug)]
 pub struct SegmentValueSchema {
     name: String,
     segment_type: SegmentType,
 }
 
+/// SegmentValue holds a parsed value
+///
+/// Usually you should not construct one of these yourself
 #[derive(PartialEq, Debug, Clone)]
 pub enum SegmentValue {
     F32(f32),
@@ -48,17 +86,26 @@ pub enum SegmentValue {
 }
 
 
+/// SegmentSchema is the schema for a particular path segment
+///
+/// `Literal` is a schema for an invairant string literal segment
+///
+/// `Value` is a schema for a segment containing a value to be parsed
 #[derive(PartialEq, Debug)]
 pub enum SegmentSchema {
     Literal(String),
     Value(SegmentValueSchema),
 }
 
+/// Schema hold the schema definition for a particular url path pattern.
+///
+/// Generally a `Schema` will map 1-to-1 to a particular request handler.
 #[derive(PartialEq, Debug)]
 pub struct Schema {
     segments: Vec<SegmentSchema>,
 }
 
+/// Error type for parsing Schemas from a String
 #[derive(Error, Debug)]
 pub enum PathSchemaParseError {
     #[error("Path schema syntax error in {segment:?}: {message}")]
@@ -70,13 +117,50 @@ pub enum PathSchemaParseError {
     UnrecognizedType(String),
 }
 
+/// Schema for a url path
+///
+/// Schema objects can be used to parse or generate corresponding paths
+///
+/// # Examples
+///
+/// ## Using Schema::path
+///
+/// The quickest way to create a Schema is usually to use the Schema::path method.
+///
+/// ```
+/// use structpath::Schema;
+/// let foo_bar_path = Schema::path("/foo/<foo_id:u64>/bar/<bar>");
+/// ```
+/// This will create schema with 4 segements:
+/// - literal "foo"
+/// - u64 field foo_id
+/// - literal "bar"
+/// - String field bar
+///
+/// ## Using builder pattern
+///
+/// A more verbose, but a bit more explicit way to create the same value as above is to use the
+/// builder pattern:
+///
+/// ```
+/// use structpath::{Schema, SegmentType};
+///
+/// let foo_bar_path = Schema::new()
+///     .literal("foo")
+///     .value("foo_id", SegmentType::U64)
+///     .literal("bar")
+///     .value("bar", SegmentType::String);
+///
+/// ```
 impl Schema {
+    /// Create a blank Schema, typically done when using builder pattern
     pub fn new() -> Self {
         Self{segments: vec![]}
     }
 
+    /// Create a Schema from a path schema string, see above example.
     pub fn path<S: Into<String>>(path: S) -> Result<Self, PathSchemaParseError> {
-        let mut schema = Schema{segments: vec![]};
+        let mut schema = Schema::new();
         for segment in path.into().split("/").skip(1) {
             if &segment[0..1] == "<" {
                 let no_brackets: String = segment.chars().skip(1).take_while(|c| c != &'>').collect();
@@ -123,25 +207,35 @@ impl Schema {
         Ok(schema)
     }
 
+    /// Append a literal to the `Schema`
+    ///
+    /// e.g. `Schema::new().literal("foo")` would match the path `"/foo"`
     pub fn literal<S: Into<String>>(mut self, segment_literal: S) -> Self {
         self.segments.push(SegmentSchema::Literal(segment_literal.into()));
         self
     }
 
+    /// Append a value to the `Schema`
+    ///
+    /// e.g. `Schema::new().value("foo", SegmentType::I64)` is equivalent to
+    /// `Schema::path("/<foo:i64>")`
     pub fn value<S: Into<String>>(mut self, name: S, segment_type: SegmentType) -> Self {
         self.segments.push(SegmentSchema::Value(SegmentValueSchema{name: name.into(), segment_type: segment_type}));
         self
     }
 
+    /// Parse a concrete path into a value, using this `Schema`
     pub fn parse<'a, S, T>(&self, path: S) -> Result<T, StructPathError> where S: Into<String>, T: serde::Deserialize<'a> {
         parse_path(path, self)
     }
 
+    /// Create a path String from parameters and this `Schema`
     pub fn generate<T>(&self, parameters: &T) -> Result<String, StructPathError> where T: serde::Serialize {
         generate_path(parameters, self)
     }
 }
 
+/// General error type for errors when parsing or generating urls
 #[derive(Error, Debug)]
 pub enum StructPathError {
     #[error("Incorrect path segment (expected {expected:?}, got {got:?})")]
@@ -696,12 +790,16 @@ impl <'de, 'a> serde::de::Deserializer<'de> for ValueDeserializer {
     }
 }
 
+/// Parse a particular path using a `Schema`
+///
+/// Typical errors will include when the Schema doesn't match T's structure.
 pub fn parse_path<'a, S, T>(path: S, schema: &Schema) -> Result<T, StructPathError> where S: Into<String>, T: serde::Deserialize<'a> {
     let generic_parsed_path_value = parse_path_generic(path.into(), schema)?;
     let deserializer = Deserializer{generic_parsed_path: generic_parsed_path_value};
     T::deserialize(&deserializer)
 }
 
+/// Internal state used by the Serializer, typically only used for debugging.
 #[derive(Debug, Clone)]
 pub enum SerializerState {
     Start, // starting, expecting a struct
