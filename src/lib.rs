@@ -1220,7 +1220,8 @@ impl<'a> serde::ser::SerializeStructVariant for &'a mut Serializer {
     }
 }
 
-fn generate_path<T>(parameters: &T, schema: &Schema) -> Result<String, StructPathError> where T: serde::Serialize {
+/// Generate a string url path given parameters and a `Schema`
+pub fn generate_path<T>(parameters: &T, schema: &Schema) -> Result<String, StructPathError> where T: serde::Serialize {
     let mut serializer = Serializer{
         serialized_values: HashMap::new(),
         state: SerializerState::Start,
