@@ -60,7 +60,7 @@ pub struct Schema {
 }
 
 #[derive(Error, Debug)]
-pub enum PathParseError {
+pub enum PathSchemaParseError {
     #[error("Path schema syntax error in {segment:?}: {message}")]
     SyntaxError{
         segment: String,
@@ -75,14 +75,14 @@ impl Schema {
         Self{segments: vec![]}
     }
 
-    pub fn path<S: Into<String>>(path: S) -> Result<Self, PathParseError> {
+    pub fn path<S: Into<String>>(path: S) -> Result<Self, PathSchemaParseError> {
         let mut schema = Schema{segments: vec![]};
         for segment in path.into().split("/").skip(1) {
             if &segment[0..1] == "<" {
                 let no_brackets: String = segment.chars().skip(1).take_while(|c| c != &'>').collect();
                 let chunks: Vec<&str> = no_brackets.split(":").collect();
                 if chunks.len() > 2 {
-                    return Err(PathParseError::SyntaxError{
+                    return Err(PathSchemaParseError::SyntaxError{
                         segment: segment.to_owned(),
                         message: "Expected at most one ':' in path segment".to_owned(),
                     });
@@ -103,7 +103,7 @@ impl Schema {
                         "i128" => SegmentType::I128,
                         "String" => SegmentType::String,
                         _ => {
-                            return Err(PathParseError::UnrecognizedType(chunks[1].to_owned()))
+                            return Err(PathSchemaParseError::UnrecognizedType(chunks[1].to_owned()))
                         },
                     };
                     schema.segments.push(SegmentSchema::Value(SegmentValueSchema{
