@@ -1242,4 +1242,19 @@ mod tests {
         let schema = Schema::path("/foo/<foo:u64>/bar/<bar>").unwrap();
         assert_eq!(schema.generate(&Parameters{foo: 1, bar: "thing".to_owned()}).unwrap(), "/foo/1/bar/thing");
     }
+
+    #[test]
+    fn test_roundtrip() {
+        #[derive(Deserialize, Serialize, PartialEq, Debug)]
+        struct Parameters{
+            foo: u64,
+            bar: String,
+        }
+
+        let test_path = "/foo/1/bar/thing";
+        let path_schema = Schema::path("/foo/<foo:u64>/bar/<bar>").unwrap();
+        let parameters: Parameters = path_schema.parse(test_path).unwrap();
+        assert_eq!(parameters, Parameters{foo: 1, bar: "thing".to_owned()});
+        assert_eq!(path_schema.generate(&parameters).unwrap(), test_path);
+    }
 }
